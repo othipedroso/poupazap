@@ -1,3 +1,4 @@
+from twilio.twiml.messaging_response import MessagingResponse
 import csv
 from datetime import datetime, timedelta
 from flask import Flask, request, send_file
@@ -78,6 +79,8 @@ def exportar_gastos_mes():
 @app.route('/webhook', methods=['POST'])
 def webhook():
     incoming_msg = request.values.get('Body', '').strip().lower()
+    resp = MessagingResponse()
+    msg = resp.message()
 
     if 'vencimento' in incoming_msg:
         resposta = contas_vencimento_proximo()
@@ -86,7 +89,8 @@ def webhook():
     else:
         resposta = "🤖 Comando não reconhecido. Tente:\n- 'vencimentos'\n- 'exportar gastos'"
 
-    return resposta, 200
+    msg.body(resposta)
+    return str(resp)
 
 @app.route('/download_gastos_mes', methods=['GET'])
 def download_gastos():
