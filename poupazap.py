@@ -1,3 +1,4 @@
+
 import csv
 from datetime import datetime, timedelta
 from flask import Flask, request
@@ -55,35 +56,20 @@ def contas_vencimento_proximo():
     sete_dias_df = contas[(contas['vencimento'] > hoje + timedelta(days=1)) & 
                           (contas['vencimento'] <= hoje + timedelta(days=7))]
 
-    resposta = "📅 Contas com vencimento:
-
-"
+    linhas = []
     if not hoje_df.empty:
-        resposta += "🔔 Hoje:
-" + "
-".join(
-            f"- 💳 {row['nome']} (R$ {row['valor']:.2f})" for _, row in hoje_df.iterrows()
-        ) + "
-"
+        linhas.append("🔔 Hoje:")
+        linhas.extend([f"- 💳 {row['nome']} (R$ {row['valor']:.2f})" for _, row in hoje_df.iterrows()])
     if not amanha_df.empty:
-        resposta += "
-🔜 Amanhã:
-" + "
-".join(
-            f"- 💳 {row['nome']} (R$ {row['valor']:.2f})" for _, row in amanha_df.iterrows()
-        ) + "
-"
+        linhas.append("🔜 Amanhã:")
+        linhas.extend([f"- 💳 {row['nome']} (R$ {row['valor']:.2f})" for _, row in amanha_df.iterrows()])
     if not sete_dias_df.empty:
-        resposta += "
-📆 Próximos 7 dias:
-" + "
-".join(
-            f"- 💦 {row['nome']} (R$ {row['valor']:.2f} - vence em {(row['vencimento'] - hoje).days} dias)"
-            for _, row in sete_dias_df.iterrows()
-        ) + "
-"
+        linhas.append("📆 Próximos 7 dias:")
+        linhas.extend([f"- 💦 {row['nome']} (R$ {row['valor']:.2f} - vence em {(row['vencimento'] - hoje).days} dias)"
+                       for _, row in sete_dias_df.iterrows()])
 
-    return resposta.strip() if resposta.strip() != "📅 Contas com vencimento:" else "✅ Nenhuma conta com vencimento nos próximos 7 dias."
+    return "
+".join(linhas) if linhas else "✅ Nenhuma conta com vencimento nos próximos 7 dias."
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
