@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: poupazap
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn poupazap_com_export:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10
