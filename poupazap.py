@@ -68,7 +68,7 @@ def contas_vencimento_proximo():
         linhas.extend([f"- 💦 {row['nome']} (R$ {row['valor']:.2f} - vence em {(row['vencimento'] - hoje).days} dias)"
                        for _, row in sete_dias_df.iterrows()])
 
-    return "
+    return
 ".join(linhas) if linhas else "✅ Nenhuma conta com vencimento nos próximos 7 dias."
 
 @app.route('/webhook', methods=['POST'])
