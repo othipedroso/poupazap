@@ -10,7 +10,37 @@ app = Flask(__name__)
 
 CSV_CONTAS = "contas.csv"
 CSV_GASTOS = "gastos.csv"
+CSV_USUARIOS = "usuarios.csv"
+CSV_LICENCAS = "licencas.csv"
 EXPORT_CSV = "gastos_mes.csv"
+
+def verificar_usuario(numero):
+    if not os.path.exists(CSV_USUARIOS):
+        return False
+    with open(CSV_USUARIOS, newline='', encoding='utf-8') as f:
+        return any(row['whatsapp'] == numero for row in csv.DictReader(f))
+
+def cadastrar_usuario(numero, nome):
+    novo = {
+        "whatsapp": numero,
+        "nome": nome,
+        "data_registro": datetime.now().strftime('%Y-%m-%d')
+    }
+    existe_header = os.path.exists(CSV_USUARIOS) and os.stat(CSV_USUARIOS).st_size > 0
+    with open(CSV_USUARIOS, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=["whatsapp", "nome", "data_registro"])
+        if not existe_header:
+            writer.writeheader()
+        writer.writerow(novo)
+
+def verificar_licenca(numero):
+    if not os.path.exists(CSV_LICENCAS):
+        return False
+    with open(CSV_LICENCAS, newline='', encoding='utf-8') as f:
+        for row in csv.DictReader(f):
+            if row['whatsapp'] == numero and row['status'].strip().lower() == 'ativa':
+                return True
+    return False
 
 def classificar_categoria(descricao):
     descricao = descricao.lower()
@@ -84,7 +114,7 @@ def contas_vencimento_proximo():
 
     resposta = "📅 Contas com vencimento:
 
-
+"
     if not hoje_df.empty:
         resposta += "🔔 Hoje:
 " + "\n".join(
@@ -166,8 +196,32 @@ def menu_principal():
 @app.route('/webhook', methods=['POST'])
 def webhook():
     incoming_msg = request.values.get('Body', '').strip().lower()
+    numero = request.values.get('From', '').replace("whatsapp:", "")
     resp = MessagingResponse()
     msg = resp.message()
+
+    if not verificar_licenca(numero):
+        msg.body("🔒 Seu número ainda não está autorizado a usar o PoupaZap.
+
+Para ativar sua licença, acesse:
+👉 https://sualoja.com/poupazap")
+        return str(resp)
+
+    if not verificar_usuario(numero):
+        if incoming_msg.startswith("me chamo"):
+            nome = incoming_msg.replace("me chamo", "").strip().title()
+            if nome:
+                cadastrar_usuario(numero, nome)
+                resposta = f"✅ Cadastro realizado com sucesso, {nome}!
+
+{menu_principal()}"
+            else:
+                resposta = "❌ Nome inválido. Tente novamente com: *me chamo seu nome*"
+        else:
+            resposta = "👋 Olá! Antes de usar o PoupaZap, por favor diga seu nome com:
+*me chamo SEU NOME*"
+        msg.body(resposta)
+        return str(resp)
 
     if incoming_msg in ['oi', 'olá', 'menu', 'ajuda']:
         resposta = menu_principal()
